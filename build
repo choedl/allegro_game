@@ -1,0 +1,7 @@
+gcc  -I ~/Downloads/allegro-5.0.5/include/ -I /home/chris/Downloads/allegro-5.0.5/build/include/ -I ~/Downloads/allegro-5.0.5/addons/native_dialog/ -I /home/chris/Downloads/allegro-5.0.5/addons/font/ -I /home/chris/Downloads/allegro-5.0.5/addons/ttf/ -I /home/chris/Downloads/allegro-5.0.5/addons/primitives/ -L ~/Downloads/allegro-5.0.5/build/lib -lallegro_dialog -lallegro_font -lallegro_ttf *.cpp
+
+g++ -lallegro_dialog -lallegro_font -lallegro_ttf TestProgram.cpp
+
+g++ -lallegro_dialog -lallegro_font -lallegro_ttf -lallegro_primitives FirstGame.cpp
+
+ g++ $(pkg-config --libs allegro-5.0 allegro_dialog-5.0 allegro_primitives-5.0)  FirstGame.cpp

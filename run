@@ -1,0 +1,3 @@
+ LD_LIBRARY_PATH=~/Downloads/allegro-5.0.5/build/lib;export LD_LIBRARY_PATH; ./a.out
+
+./a.out
