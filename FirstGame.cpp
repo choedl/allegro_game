@@ -2,6 +2,7 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
+#include <allegro5/allegro_image.h>
 #include "objects.h"
 
 // globals
@@ -13,7 +14,7 @@ enum KEYS { UP, DOWN, LEFT, RIGHT, SPACE };
 bool keys[5] = { false, false, false, false, false };
 
 // prototypes
-void initShip(SpaceShip &ship);
+void initShip(SpaceShip &ship, ALLEGRO_BITMAP* image);
 void drawShip(SpaceShip &ship);
 void moveShipUp(SpaceShip &ship);
 void moveShipDown(SpaceShip &ship);
@@ -48,6 +49,7 @@ int main(void) {
   ALLEGRO_EVENT_QUEUE *event_queue = NULL;
   ALLEGRO_TIMER *timer = NULL;
   ALLEGRO_FONT *font18 = NULL;
+  ALLEGRO_BITMAP* shipImage = NULL;
 
   if (!al_init()) return -1;
 
@@ -60,27 +62,31 @@ int main(void) {
   al_install_keyboard();
   al_init_font_addon();
   al_init_ttf_addon();
+  al_init_image_addon();
 
-	event_queue = al_create_event_queue();
+  event_queue = al_create_event_queue();
   timer = al_create_timer(1.0 / FPS);
 
+  shipImage = al_load_bitmap("Spaceship_sprites_by_arboris_modified.png");
+  al_convert_mask_to_alpha(shipImage, al_map_rgb(255, 0, 255));
+
   srand(time(NULL)); // init random number generator
-  initShip(ship);
+  initShip(ship, shipImage);
   initBullet(bullets, NUM_BULLETS);
   initComet(comets, NUM_COMETS);
 
   font18 = al_load_font("Arial.ttf", 18, 0);
 
-	al_register_event_source(event_queue, al_get_keyboard_event_source());
-	al_register_event_source(event_queue, al_get_mouse_event_source());
-	al_register_event_source(event_queue, al_get_display_event_source(display));
+  al_register_event_source(event_queue, al_get_keyboard_event_source());
+  al_register_event_source(event_queue, al_get_mouse_event_source());
+  al_register_event_source(event_queue, al_get_display_event_source(display));
   al_register_event_source(event_queue, al_get_timer_event_source(timer));
 
   al_start_timer(timer);
 
   while (!done) {
-		ALLEGRO_EVENT ev;
-		al_wait_for_event(event_queue, &ev);
+	ALLEGRO_EVENT ev;
+	al_wait_for_event(event_queue, &ev);
 
     if (ev.type == ALLEGRO_EVENT_TIMER) {
       redraw = true;
@@ -162,34 +168,46 @@ int main(void) {
     }
   }
 
+  al_destroy_bitmap(shipImage);
   al_destroy_event_queue(event_queue);
   al_destroy_display(display);
   al_destroy_timer(timer);
-  //al_destroy_bitmap(image);
   al_destroy_font(font18);
 
   return 0;
 
 }
 
-void initShip(SpaceShip &ship) {
+void initShip(SpaceShip &ship, ALLEGRO_BITMAP* image) {
   ship.x = 20;
   ship.y = HEIGHT / 2;
   ship.ID = PLAYER;
   ship.lives = 3;
-  ship.speed = 7;
+  ship.speed = 6;
   ship.boundx = 6;
   ship.boundy = 7;
   ship.score = 0;
+
+  ship.maxFrame = 3;
+  ship.curFrame = 0;
+  ship.frameCount = 0;
+  ship.frameDelay = 50;
+  ship.frameWidth = 46;
+  ship.frameHeight = 41;
+  ship.animationColumns = 3;
+  ship.animationDirection = 1;
+
+  ship.animationRow = 1;
+
+  ship.image = image;
 }
 
 void drawShip(SpaceShip &ship) {
-  al_draw_filled_rectangle(ship.x, ship.y - 9, ship.x + 10, ship.y - 7, al_map_rgb(255, 0, 0));
-  al_draw_filled_rectangle(ship.x, ship.y + 9, ship.x + 10, ship.y + 7, al_map_rgb(255, 0, 0));
+  int fx = (ship.curFrame % ship.animationColumns) * ship.frameWidth;
+  int fy = ship.animationRow * ship.frameHeight;
 
-  al_draw_filled_triangle(
-    ship.x - 12, ship.y - 17, ship.x + 12, ship.y, ship.x - 12, ship.y + 17, al_map_rgb(0, 255, 0));
-  al_draw_filled_rectangle(ship.x - 12, ship.y - 2, ship.x + 15, ship.y + 2, al_map_rgb(0, 0, 255));
+  al_draw_bitmap_region(ship.image, fx, fy, ship.frameWidth, ship.frameHeight,
+      ship.x - ship.frameWidth / 2, ship.y - ship.frameHeight / 2, 0);
 }
 
 void moveShipUp(SpaceShip &ship) {
@@ -321,7 +339,6 @@ void collideComet(Comet comets[], int sizeComets, SpaceShip &ship) {
     }
   }
 }
-
 
 
 
