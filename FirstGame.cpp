@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
@@ -15,6 +17,7 @@ bool keys[5] = { false, false, false, false, false };
 
 // prototypes
 void initShip(SpaceShip &ship, ALLEGRO_BITMAP* image);
+void resetShipAnimation(SpaceShip &ship, int position);
 void drawShip(SpaceShip &ship);
 void moveShipUp(SpaceShip &ship);
 void moveShipDown(SpaceShip &ship);
@@ -90,15 +93,24 @@ int main(void) {
 
     if (ev.type == ALLEGRO_EVENT_TIMER) {
       redraw = true;
-      if (keys[UP]) moveShipUp(ship);
-      if (keys[DOWN]) moveShipDown(ship);
-      if (keys[LEFT]) moveShipLeft(ship);
-      if (keys[RIGHT]) moveShipRight(ship);
+      if (keys[UP])
+    	moveShipUp(ship);
+      else if (keys[DOWN])
+    	moveShipDown(ship);
+      else
+    	resetShipAnimation(ship, 1);
+
+      if (keys[LEFT])
+    	moveShipLeft(ship);
+      else if (keys[RIGHT])
+    	moveShipRight(ship);
+      else
+    	resetShipAnimation(ship, 2);
 
       if (!isGameOver) {
         updateBullet(bullets, NUM_BULLETS);
         startComet(comets, NUM_COMETS);
-        updateComet(comets, NUM_COMETS);
+        //updateComet(comets, NUM_COMETS);
         collideBullet(bullets, NUM_BULLETS, comets, NUM_COMETS, ship);
         collideComet(comets, NUM_COMETS, ship);
         if (ship.lives <= 0) isGameOver = true;
@@ -156,10 +168,10 @@ int main(void) {
         drawShip(ship);
         drawBullet(bullets, NUM_BULLETS);
         drawComet(comets, NUM_COMETS);
-        al_draw_textf(font18, al_map_rgb(255, 0, 255), 
+        al_draw_textf(font18, al_map_rgb(255, 0, 255),
                       5, 5, 0, "Player has %i lives left. Player has destroyed %i objects", ship.lives, ship.score);
       } else {
-        al_draw_textf(font18, al_map_rgb(0, 255, 255), 
+        al_draw_textf(font18, al_map_rgb(0, 255, 255),
                       WIDTH / 2, HEIGHT / 2, ALLEGRO_ALIGN_CENTRE, "Game Over, Final Score: %i", ship.score);
       }
 
@@ -184,8 +196,8 @@ void initShip(SpaceShip &ship, ALLEGRO_BITMAP* image) {
   ship.ID = PLAYER;
   ship.lives = 3;
   ship.speed = 6;
-  ship.boundx = 6;
-  ship.boundy = 7;
+  ship.boundx = 10;
+  ship.boundy = 12;
   ship.score = 0;
 
   ship.maxFrame = 3;
@@ -202,30 +214,46 @@ void initShip(SpaceShip &ship, ALLEGRO_BITMAP* image) {
   ship.image = image;
 }
 
+void resetShipAnimation(SpaceShip &ship, int position) {
+  if (position == 1)
+	ship.animationRow = 1;
+  else
+	ship.curFrame = 0;
+}
+
 void drawShip(SpaceShip &ship) {
+
   int fx = (ship.curFrame % ship.animationColumns) * ship.frameWidth;
   int fy = ship.animationRow * ship.frameHeight;
 
   al_draw_bitmap_region(ship.image, fx, fy, ship.frameWidth, ship.frameHeight,
       ship.x - ship.frameWidth / 2, ship.y - ship.frameHeight / 2, 0);
+
+  // draw bounding box
+  al_draw_filled_rectangle(ship.x - ship.boundx, ship.y - ship.boundy, ship.x + ship.boundx,
+		  ship.y + ship.boundy, al_map_rgba(255, 0, 255, 100));
 }
 
 void moveShipUp(SpaceShip &ship) {
+  ship.animationRow = 0;
   ship.y -= ship.speed;
   if (ship.y < 0) ship.y = 0;
 }
 
 void moveShipDown(SpaceShip &ship) {
+  ship.animationRow = 2;
   ship.y += ship.speed;
   if (ship.y > HEIGHT) ship.y = HEIGHT;
 }
 
 void moveShipLeft(SpaceShip &ship) {
+  ship.curFrame = 2;
   ship.x -= ship.speed;
   if (ship.x < 0) ship.x = 0;
 }
 
 void moveShipRight(SpaceShip &ship) {
+  ship.curFrame = 1;
   ship.x += ship.speed;
   if (ship.x > 300) ship.x = 300;
 }
@@ -240,7 +268,7 @@ void initBullet(Bullet bullet[], int size) {
 
 void drawBullet(Bullet bullet[], int size) {
   for (int i = 0; i < size; i++) {
-    if (bullet[i].live) 
+    if (bullet[i].live)
       al_draw_filled_circle(bullet[i].x, bullet[i].y, 2, al_map_rgb(255, 255, 255));
   }
 }
@@ -269,7 +297,7 @@ void updateBullet(Bullet bullet[], int size) {
 void collideBullet(Bullet bullet[], int sizeBullets, Comet comets[], int sizeComets, SpaceShip &ship) {
   for (int i = 0; i < sizeBullets; i++) {
     if (bullet[i].live) {
-      for (int j = 0; j < sizeComets; j++) {      
+      for (int j = 0; j < sizeComets; j++) {
         if (comets[j].live) {
           if (bullet[i].x > (comets[j].x - comets[j].boundx) &&
               bullet[i].x < (comets[j].x + comets[j].boundx) &&
@@ -282,7 +310,7 @@ void collideBullet(Bullet bullet[], int sizeBullets, Comet comets[], int sizeCom
         }
       }
     }
-  }  
+  }
 }
 
 void initComet(Comet comets[], int size) {
@@ -297,7 +325,7 @@ void initComet(Comet comets[], int size) {
 
 void drawComet(Comet comets[], int size) {
   for (int i = 0; i < size; i++) {
-    if (comets[i].live) 
+    if (comets[i].live)
       al_draw_filled_circle(comets[i].x, comets[i].y, 20, al_map_rgb(255, 0, 0));
   }
 }
@@ -335,7 +363,7 @@ void collideComet(Comet comets[], int sizeComets, SpaceShip &ship) {
       } else if (comets[i].x < 0) {
         comets[i].live = false;
         ship.lives--;
-      }          
+      }
     }
   }
 }
