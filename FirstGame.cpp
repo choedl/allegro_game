@@ -30,7 +30,7 @@ void fireBullet(Bullet bullet[], int size, SpaceShip &ship);
 void updateBullet(Bullet bullet[], int size);
 void collideBullet(Bullet bullet[], int sizeBullets, Comet comets[], int sizeComets, SpaceShip &ship);
 
-void initComet(Comet comets[], int size);
+void initComet(Comet comets[], int size, ALLEGRO_BITMAP* cometImage);
 void drawComet(Comet comets[], int size);
 void startComet(Comet comets[], int size);
 void updateComet(Comet comets[], int size);
@@ -53,6 +53,7 @@ int main(void) {
   ALLEGRO_TIMER *timer = NULL;
   ALLEGRO_FONT *font18 = NULL;
   ALLEGRO_BITMAP* shipImage = NULL;
+  ALLEGRO_BITMAP* cometImage = NULL;
 
   if (!al_init()) return -1;
 
@@ -73,10 +74,12 @@ int main(void) {
   shipImage = al_load_bitmap("Spaceship_sprites_by_arboris_modified.png");
   al_convert_mask_to_alpha(shipImage, al_map_rgb(255, 0, 255));
 
+  cometImage = al_load_bitmap("asteroid-1-96.png");
+
   srand(time(NULL)); // init random number generator
   initShip(ship, shipImage);
   initBullet(bullets, NUM_BULLETS);
-  initComet(comets, NUM_COMETS);
+  initComet(comets, NUM_COMETS, cometImage);
 
   font18 = al_load_font("Arial.ttf", 18, 0);
 
@@ -110,7 +113,7 @@ int main(void) {
       if (!isGameOver) {
         updateBullet(bullets, NUM_BULLETS);
         startComet(comets, NUM_COMETS);
-        //updateComet(comets, NUM_COMETS);
+        updateComet(comets, NUM_COMETS);
         collideBullet(bullets, NUM_BULLETS, comets, NUM_COMETS, ship);
         collideComet(comets, NUM_COMETS, ship);
         if (ship.lives <= 0) isGameOver = true;
@@ -181,6 +184,7 @@ int main(void) {
   }
 
   al_destroy_bitmap(shipImage);
+  al_destroy_bitmap(cometImage);
   al_destroy_event_queue(event_queue);
   al_destroy_display(display);
   al_destroy_timer(timer);
@@ -230,8 +234,8 @@ void drawShip(SpaceShip &ship) {
       ship.x - ship.frameWidth / 2, ship.y - ship.frameHeight / 2, 0);
 
   // draw bounding box
-  al_draw_filled_rectangle(ship.x - ship.boundx, ship.y - ship.boundy, ship.x + ship.boundx,
-		  ship.y + ship.boundy, al_map_rgba(255, 0, 255, 100));
+  /*al_draw_filled_rectangle(ship.x - ship.boundx, ship.y - ship.boundy, ship.x + ship.boundx,
+		  ship.y + ship.boundy, al_map_rgba(255, 0, 255, 100));*/
 }
 
 void moveShipUp(SpaceShip &ship) {
@@ -313,20 +317,44 @@ void collideBullet(Bullet bullet[], int sizeBullets, Comet comets[], int sizeCom
   }
 }
 
-void initComet(Comet comets[], int size) {
+void initComet(Comet comets[], int size, ALLEGRO_BITMAP* image) {
   for (int i = 0; i < size; i++) {
     comets[i].ID = ENEMY;
     comets[i].speed = 5;
     comets[i].live = false;
-    comets[i].boundx = 18;
-    comets[i].boundy = 18;
+    comets[i].boundx = 35;
+    comets[i].boundy = 35;
+
+    comets[i].maxFrame = 143;
+    comets[i].curFrame = 0;
+    comets[i].frameCount = 0;
+    comets[i].frameDelay = 2;
+    comets[i].frameWidth = 96;
+    comets[i].frameHeight = 96;
+    comets[i].animationColumns = 21;
+
+    if (rand() % 2)
+      comets[i].animationDirection = 1;
+    else
+      comets[i].animationDirection = -1;
+
+    comets[i].image = image;
   }
 }
 
 void drawComet(Comet comets[], int size) {
   for (int i = 0; i < size; i++) {
-    if (comets[i].live)
-      al_draw_filled_circle(comets[i].x, comets[i].y, 20, al_map_rgb(255, 0, 0));
+    if (comets[i].live) {
+    	int fx = (comets[i].curFrame % comets[i].animationColumns) * comets[i].frameWidth;
+    	int fy = (comets[i].curFrame / comets[i].animationColumns) * comets[i].frameHeight;
+
+    	al_draw_bitmap_region(comets[i].image, fx, fy, comets[i].frameWidth, comets[i].frameHeight,
+    			comets[i].x - comets[i].frameWidth / 2, comets[i].y - comets[i].frameHeight / 2, 0);
+        /*
+    	al_draw_filled_rectangle(comets[i].x - comets[i].boundx, comets[i].y - comets[i].boundy,
+    			comets[i].x + comets[i].boundx, comets[i].y + comets[i].boundy, al_map_rgba(255, 0, 255, 100));
+    	*/
+    }
   }
 }
 
@@ -346,6 +374,16 @@ void startComet(Comet comets[], int size) {
 void updateComet(Comet comets[], int size) {
   for (int i = 0; i < size; i++) {
     if (comets[i].live) {
+      if (++comets[i].frameCount >= comets[i].frameDelay) {
+        comets[i].curFrame += comets[i].animationDirection;
+        if (comets[i].curFrame >= comets[i].maxFrame)
+          comets[i].curFrame = 0;
+        else if (comets[i].curFrame <= 0)
+          comets[i].curFrame = comets[i].maxFrame -1;
+
+        comets[i].frameCount = 0;
+
+      }
       comets[i].x -= comets[i].speed;
     }
   }
